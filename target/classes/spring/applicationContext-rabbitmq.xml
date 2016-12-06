@@ -1,0 +1,47 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit
+						http://www.springframework.org/schema/rabbit/spring-rabbit-1.4.xsd
+						http://www.springframework.org/schema/beans
+						http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
+    
+    <!-- 生产者配置 -->
+    
+    
+    <!-- 连接工厂 -->
+	<rabbit:connection-factory id="connectionFactory"
+		host="127.0.0.1" port="5672" username="guest"
+		password="guest" virtual-host="/demo" />
+		
+	<!-- mq管理,包括队列、交换器等 -->
+	<rabbit:admin connection-factory="connectionFactory"/>
+	
+	<!-- 交换机 ,auto-declare 自动声明，当发送消息的时候如果交换机不存在，则去创建  durable="true" 设置持久化-->
+	<!-- <rabbit:topic-exchange name="PRODUCT-EXCHANGE" auto-declare="true" durable="true" ></rabbit:topic-exchange> -->
+	
+	<!-- rabbit模版 -->
+	<rabbit:template id="rabbitTemplate" connection-factory="connectionFactory" exchange="PRODUCT-EXCHANGE" routing-key="Consumer.*"></rabbit:template>
+    
+    
+    <!-- 消费者配置 -->
+    
+    
+	<!-- 配置队列，自动声明 -->
+	<rabbit:queue name="CONSUMER-QUEUE" auto-declare="true" durable="true"></rabbit:queue>
+	
+	<!-- 定义交换器，自动声明 -->
+	<rabbit:topic-exchange name="PRODUCT-EXCHANGE">
+		<rabbit:bindings>
+			<rabbit:binding queue="CONSUMER-QUEUE" pattern="Consumer.*" />
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+	
+	<!-- 队列监听 -->
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener ref="Consumer" method="execute" queue-names="CONSUMER-QUEUE" />
+	</rabbit:listener-container>
+
+	<bean id="Consumer" class="demo.rabbitmq.spring.Consumer" />
+
+</beans>
